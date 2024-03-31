@@ -1,0 +1,9 @@
+h1{
+  text-align: center;
+  font-style: italic;
+}
+#mapContainer{
+  margin: auto;
+  height: 80vw;
+  width: 100vw;
+}

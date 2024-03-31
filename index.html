@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <title>Water logging</title>
+    <!-- map core -->
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" type="text/javascript" charset="utf-8"></script>
+    <!-- basic UI -->
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js" type="text/javascript" charset="utf-8"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
+    <!-- Map event -->
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" type="text/javascript" charset="utf-8"></script>
+
+
+
+  </head>
+  <body style="padding:0; margin:0">
+    <!-- <h1 style="text-align: center; font-style: italic;">Water logging Detection</h1> -->
+    <div align="center" id="mapContainer" style=" margin: auto; width: 100vw; height: 100vh "></div>
+
+    <script>
+
+    //  const https = require('https');
+
+      if(navigator.geolocation){
+          const url = "https://api.thingspeak.com/channels/1941457/feeds.json?api_key=9V61BTD80W69MSBC&results=1";
+          const request = new XMLHttpRequest();
+
+          navigator.geolocation.getCurrentPosition(position => {
+            //console.log(position)
+            let browserPosition={lat: position.coords.latitude,lng:position.coords.longitude}
+
+            var platform = new H.service.Platform({
+              'apikey': 'B9km_iOVZ3-Rj76EmGowGl4KyRjMMU5Q17DH1hR4eoU'
+            });
+
+            var maptypes = platform.createDefaultLayers();
+
+            // Instantiate (and display) the map
+            const map = new H.Map(
+            document.getElementById('mapContainer'),
+            maptypes.vector.normal.map,
+            {
+              zoom: 15,
+              center: { lng:position.coords.longitude , lat:position.coords.latitude }
+            });
+            // Create the default UI:
+            var ui = H.ui.UI.createDefault(map, maptypes);
+
+            // Event insilization
+            var mapEvents = new H.mapevents.MapEvents(map);
+            // Add event listener:
+            map.addEventListener('tap', function(evt) {
+                console.log(evt.type, evt.currentPointer.type);
+            });
+
+            var behavior = new H.mapevents.Behavior(mapEvents);
+
+            let marker= new H.map.Marker(browserPosition,);
+            map.addObject(marker);
+
+            let view = map.getViewPort();
+            window.addEventListener('resize',function(){
+              view.resize();
+            });
+
+          //let m=map;
+          //api requestto get water level from thingspeak
+          request.open("GET" , url);
+          request.send();
+          request.onload = () => {
+            if(request.status==200){
+              var query = {id:0,lat:0,lng:0,waterLevel:0}
+              console.log(request.response);
+              var data= JSON.parse(request.response);
+              query.id = data.channel.last_entry_id;
+              query.lat = data.channel.latitude;
+              query.lng = data.channel.longitude;
+              query.waterLevel=data.feeds[0].field1;
+
+              console.log(query);
+
+              // Add the first marker
+              //var waterIcon = new H.map.Icon('images/temp.jpg');
+              // var svgIcon = '<svg height="100" width="100"><circle cx="50" cy="50" r="40"style="fill:#03c2fc;stroke:black;stroke-width:4;fill-opacity:0.4;stroke-opacity=0.9" /></svg> ';
+              // var waterIcon = new H.map.Icon(svgIcon);
+              let waterMarker = new H.map.Circle({lat:query.lat,lng:query.lng},100,{style: {strokeColor: 'rgba(0, 0, 0, 0.7)',lineWidth: 2,fillColor: 'rgba(255, 0, 0, 0.6)'}});
+
+              if(query.waterLevel<=4 ){
+                //addMark({lat:query.lat,lng:query.lng});
+                map.addObject(waterMarker);
+            }
+            }else{
+              console.log("Error in feching api data");
+            }
+          }
+          //console.log(query);
+
+      });
+
+      }else{
+        alert("Location is not supported by browser");
+      }
+
+    </script>
+
+  </body>
+
+</html>
